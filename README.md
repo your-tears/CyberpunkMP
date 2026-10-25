@@ -1,5 +1,17 @@
 # Cyberpunk Multiplayer
 
+> [!NOTE]
+> This is an unofficial fork of [CyberpunkMP](https://github.com/tiltedphoques/CyberpunkMP)
+> by **Tilted Phoques SRL**, updated to run on Cyberpunk 2077 **patch 2.5** (branch
+> `update-2.5`). All credit for the original mod goes to Tilted Phoques SRL; this fork is
+> distributed under the original [license](LICENSE.md).
+>
+> Changes in this fork: build fixes for the current toolchain, RED4ext.SDK merged with the
+> upstream 2.5 support ([fork](https://github.com/your-tears/RED4ext.SDK/tree/cyberpunkmp-2.5)),
+> client adapted to the 2.5 engine layouts, a save-less "Multiplayer" main menu entry and
+> server-side spawn points. Dependencies for 2.5: RED4ext 1.31.0, Redscript 0.5.32,
+> ArchiveXL 1.28.0, TweakXL 1.12.0, Codeware 1.21.0, Input Loader 0.2.3.
+
 **CyberpunkMP** is a multiplayer mod for Cyberpunk 2077, created by Tilted 
 Phoques SRL. This mod brings multiplayer functionality to the game, allowing 
 players to synchronize their appearances, equipment, movements, and basic 
