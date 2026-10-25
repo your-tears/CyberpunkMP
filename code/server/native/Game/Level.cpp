@@ -170,6 +170,8 @@ void Level::HandleSpawnCharacterRequest(PacketEvent<client::SpawnCharacterReques
     const Vector<String> equipment = aMessage.get_equipment();
     const Vector<uint8_t> ccstate = aMessage.get_ccstate();
 
+    spdlog::info("Spawn character request at position ({}, {}, {}), rotation {}", pos.x, pos.y, pos.z, rot.z);
+
     server::SpawnCharacterResponse response;
     response.set_cookie(aMessage.get_cookie());
 
