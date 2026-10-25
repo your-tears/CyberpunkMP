@@ -84,6 +84,28 @@ xmake project -k vsxmake   # решение для Visual Studio в папке v
 
 xmake собирает всё сразу: C++ клиент и сервер, C# SDK и плагины (dotnet), админку (pnpm).
 
+## Установка и запуск (проверено 25.10.2026)
+
+Раскладка: `xmake install -y -o dist Client redscript Archives Inputs Tweaks Server.Native Server.Scripting Server.Loader Admin`
+(путь `-o` только относительный: Admin ломается на абсолютном; полный `xmake install`
+тянет Electron-лаунчер, он падает на pnpm 12). Результат: `dist/launcher/mod` (клиент), `dist/launcher/server`.
+
+- Клиент: содержимое `dist/launcher/mod` копируется в `<игра>/red4ext/plugins/zzzCyberpunkMP/`
+  (zzz нужно, чтобы грузиться после ArchiveXL и TweakXL). Без флага `--online` мод выключен.
+  Запуск: `bin/x64/Cyberpunk2077.exe --online --ip=127.0.0.1` (порт по умолчанию 11778, флаг `--port=`).
+- Зависимости под 2.5: RED4ext 1.31.0, Redscript **0.5.32** (стабильная ветка, поддерживает 2.5;
+  1.0 пока только preview), ArchiveXL 1.28.0, TweakXL 1.12.0, Codeware 1.21.0,
+  Input Loader 0.2.3 (обязателен, Main.cpp без него падает; под 2.5 официально НЕ подтверждён),
+  CET 1.38.0 (нужен только для `code/assets/CET/init.lua` плагина работ, автоматически не ставится).
+- Сервер: `dist/launcher/server/Server.Loader.exe`, обязательны переменные окружения
+  `CYBERPUNKMP_ADMIN_USERNAME` / `CYBERPUNKMP_ADMIN_PASSWORD`. Конфиг `config/server.json`
+  (создаётся при первом запуске), логи `logs/`. Порты: игра UDP 11778, веб 11779, Flecs REST 27750.
+  «Server could not reach the server list» безвредно (мастер-сервер Tilted Phoques мёртв).
+
+Логи для отладки: `red4ext/logs/`, `red4ext/plugins/zzzCyberpunkMP/CyberpunkMP.log`,
+`r6/logs/redscript_rCURRENT.log`, `red4ext/plugins/{ArchiveXL,TweakXL,Codeware}/*.log`,
+`bin/x64/plugins/cyber_engine_tweaks/cyber_engine_tweaks.log`, краши: `%LOCALAPPDATA%\REDEngine\ReportQueue\`.
+
 ## Как клиент обращается к движку
 
 - Функции движка вызываются через `Core::RawFunc<hash, signature>` (`code/client/Core/Raw.hpp`).
