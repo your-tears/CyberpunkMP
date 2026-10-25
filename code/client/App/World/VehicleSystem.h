@@ -42,7 +42,8 @@ private:
     std::optional<Red::EntityID> m_vehicleGameId;
 };
 
-RTTI_DEFINE_CLASS(VehicleSystem, { 
+// Patch 2.5: the game now has its own native "VehicleSystem", so ours needs a distinct native name
+RTTI_DEFINE_CLASS(VehicleSystem, "CyberpunkMPVehicleSystem", {
     RTTI_ALIAS("CyberpunkMP.World.VehicleSystem");
     RTTI_METHOD(OnVehicleEnter);
     RTTI_METHOD(OnVehicleExit);
