@@ -86,6 +86,12 @@ xmake собирает всё сразу: C++ клиент и сервер, C# S
 
 ## Установка и запуск (проверено 25.10.2026)
 
+**Быстрый путь для разработки:** `start-dev.cmd` (логика в `tools/dev/start-dev.ps1`). Находит
+игру через Steam (у пользователя `D:\steam\steamapps\common\Cyberpunk 2077`), проверяет версии
+зависимостей, делает junction `red4ext/plugins/zzzCyberpunkMP` → `dist/launcher/mod`, запускает
+сервер (пароль админки генерируется в `dist/dev-settings.json`) и игру. `-Build`: пересобрать и
+переразложить в dist перед запуском. Обычную папку zzzCyberpunkMP (не ссылку) скрипт не трогает.
+
 Раскладка: `xmake install -y -o dist Client redscript Archives Inputs Tweaks Server.Native Server.Scripting Server.Loader Admin`
 (путь `-o` только относительный: Admin ломается на абсолютном; полный `xmake install`
 тянет Electron-лаунчер, он падает на pnpm 12). Результат: `dist/launcher/mod` (клиент), `dist/launcher/server`.
