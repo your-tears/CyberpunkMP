@@ -13,3 +13,6 @@ native func FTLogError(const value: script_ref<String>) -> Void
 
 native func Trace() -> Void
 native func TraceToString() -> String
+
+// CyberpunkMP native, writes to CyberpunkMP.log (vanilla log functions are no-ops in retail)
+native func CyberpunkMPLog(text: String) -> Void
