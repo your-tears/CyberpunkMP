@@ -37,6 +37,8 @@ to handle RPC functionality.
 1. Navigate to the repository using a command prompt.
 2. Check out the correct branch/tag if you're not working against main
 3. Run `git submodule update --init` to pull in vendored dependencies
+   (ArchiveXL 1.28 contains very long paths: on Windows run `git config --global core.longpaths true`
+   first, or clone into a short folder such as `D:\dev\cyber`)
 4. Run `xmake -y` (add `-v` for verbose output)
 
 ### Visual Studio
