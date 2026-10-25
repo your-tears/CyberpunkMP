@@ -190,5 +190,11 @@ xmake собирает всё сразу: C++ клиент и сервер, C# S
 | App/World/AppearanceSystem.cpp | Item_Record::appearanceName | ЗАМЕНЕНО: `TweakDB::GetValue<CName>(item + ".appearanceName")` |
 | vendor: inkWidget.hpp, vehicleBaseObject.hpp (вне конфликта), inkTextWidget.hpp, ICharacterCustomizationState.hpp (vtable) | поля и виртуалы форка с офсетами 2.2 | компилируются, клиентом сейчас не используются; не использовать без проверки |
 
+| Game/ScriptValidation.h (ScriptBundle, ScriptClass, ScriptFunction и т.д.) | скриптовые структуры движка | ЗАМЕНЕНО на разметку Codeware 1.21.0 (коммит b054150f «Support patch 2.5»): база +0x28, ScriptClass +0x20, ScriptBundle +8. Первый краш в игре был здесь |
+| App/Network/Rpc/RpcValidator.cpp | ScriptReport::fillErrors и AddValidationError | ОТКЛЮЧЕНО, ошибки RPC-валидации пишутся в лог мода |
+
+Отладка крашей: `cdbX64 -z <dmp> -y D:\dev\cyber\build\windows\x64\release -c ".ecxr; kn 30; q"`
+(WinDbg поставлен через winget; дампы в `%LOCALAPPDATA%\REDEngine\ReportQueue\`).
+
 Подтверждение из ArchiveXL 1.28 (2.5): группы head/body/arms у CharacterCustomizationState
 по 0x70/0x80/0x90, как в реверсе форка, то есть начало структуры не сдвинулось.

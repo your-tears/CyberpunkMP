@@ -70,11 +70,8 @@ bool ValidateType(Set<RED4ext::CName>& knownTypes, Game::ScriptType* type, Game:
         auto res = std::format(
             "CyberpunkMP: RpcDefinition '{}' function '{}' type '{}' is a handle which is not supported.", klass->name.ToString(), func->name.ToString(),
             type->name.ToString());
-        Game::StringView v;
-        v.length = res.size();
-        v.str = res.c_str();
-
-        apReporter->AddValidationError(v);
+        // Patch 2.5: ScriptReport layout is not verified, log instead of AddValidationError
+        spdlog::error(res);
         return false;
     }
 
@@ -128,11 +125,8 @@ bool ValidateFunction(Game::ScriptClass* klass, Game::ScriptFunction* func, Game
             auto res = std::format(
                 "CyberpunkMP: RpcDefinition '{}' function '{}' parameter '{}' is out or optional which is invalid.", klass->name.ToString(), func->name.ToString(),
                 param->name.ToString());
-            Game::StringView v;
-            v.length = res.size();
-            v.str = res.c_str();
-
-            apReporter->AddValidationError(v);
+            // Patch 2.5: ScriptReport layout is not verified, log instead of AddValidationError
+            spdlog::error(res);
             return false;
         }
 
@@ -146,7 +140,8 @@ bool ValidateFunction(Game::ScriptClass* klass, Game::ScriptFunction* func, Game
 bool (*RealScriptValidator_Validate)(void* apThis, Game::ScriptBundle* apBundler, Game::ScriptReport* apReporter);
 bool HookScriptValidator_Validate(void* apThis, Game::ScriptBundle* apBundler, Game::ScriptReport* apReporter)
 {
-    apReporter->fillErrors = true;
+    // Patch 2.5: disabled until verified, ScriptReport::fillErrors (+0x08) was reversed for 2.2
+    // apReporter->fillErrors = true;
 
     constexpr Red::CName parentName("CyberpunkMP.ServerRpc");
     for (const auto klass : apBundler->classes)
