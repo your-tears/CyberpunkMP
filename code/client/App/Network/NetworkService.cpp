@@ -4,6 +4,7 @@
 #include "Game/Utils.h"
 #include "RED4ext/Scripting/Natives/Generated/Vector4.hpp"
 #include "RED4ext/Scripting/Natives/Generated/game/Object.hpp"
+#include "RED4ext/Scripting/Natives/entIPlacedComponent.hpp"
 #include "App/World/AppearanceSystem.h"
 #include "Game/CharacterCustomizationSystem.h"
 
@@ -88,8 +89,8 @@ void NetworkService::HandleAuthentication(const PacketEvent<server::Authenticati
     Red::Handle<Red::GameObject> player;
     system->GetLocalPlayerControlledGameObject(player);
 
-    const auto& cEntityPosition = player->placedComponent->localTransform.Position;
-    const auto cEntityRotation = Game::ToGlm(player->placedComponent->localTransform.Orientation);
+    const auto& cEntityPosition = player->transformComponent->localTransform.Position;
+    const auto cEntityRotation = Game::ToGlm(player->transformComponent->localTransform.Orientation);
 
     common::Vector3 pos;
     pos.set_x(cEntityPosition.x);

@@ -98,7 +98,8 @@ void AddItems(Red::Handle<Red::game::Object> & object, Red::DynArray<Red::TweakD
         Red::CString placementStr;
         Red::CallStatic("gamedataTDBIDHelper", "ToStringDEBUG", placementStr, placementSlot);
 
-        auto appearanceName = EvalCName(&item_record.instance->appearanceName);
+        // Patch 2.5: read the flat by name, Item_Record field offsets were reversed for 2.2
+        auto appearanceName = Red::TweakDB::Get()->GetValue<Red::CName>(Red::TweakDBID(item, ".appearanceName"));
         std::string appearance = appearanceName.ToString();
         // auto suffixes = EvalArrayTweakDBID(&item_record.instance->appearanceSuffixes);
         // for (auto const suffix : suffixes) {
@@ -165,16 +166,16 @@ void AddItems(Red::Handle<Red::game::Object> & object, Red::DynArray<Red::TweakD
 
 bool AppearanceSystem::ApplyAppearance(Red::Handle<Red::game::Object> object)
 {
-    if (m_playerCcstate.find(object.instance->id) == m_playerCcstate.end()) 
+    if (m_playerCcstate.find(object.instance->entityID) == m_playerCcstate.end()) 
     {
         // not our entity
         return false;
     }
 
-    auto bytes = m_playerCcstate[object.instance->id];
+    auto bytes = m_playerCcstate[object.instance->entityID];
     if (bytes.size() == 0) 
     {
-        spdlog::info("no bytes for {}", object->id.hash);
+        spdlog::info("no bytes for {}", object->entityID.hash);
         return false;
     }
 
@@ -199,7 +200,7 @@ bool AppearanceSystem::ApplyAppearance(Red::Handle<Red::game::Object> object)
     // Red::CallVirtual(this, "AddItems", object);
 
     // c++ method
-    auto items = m_playerEquipment[object.instance->id];
+    auto items = m_playerEquipment[object.instance->entityID];
     // if (stateHandle.instance->isBodyGenderMale) {
     //     // items.PushBack("Items.PlayerMaTppHead");
     //     items.PushBack("Items.MuppetMaHead");
@@ -301,29 +302,29 @@ bool AppearanceSystem::ApplyAppearance(Red::Handle<Red::game::Object> object)
         spdlog::info("Scheduling change");
 
         Red::DynArray<Red::world::EntityAppearanceChangeParameter::Key> keys;
-        stateHandle.instance->GetHeadCustomization("TPP", true, keys);
-        stateHandle.instance->GetHeadCustomization("face", true, keys);
-        stateHandle.instance->GetHeadCustomization("hairs", true, keys);
-        if (stateHandle.instance->isBodyGenderMale) 
+        CharacterCustomizationState_GetHeadAppearances(stateHandle.instance, "TPP", true, keys);
+        CharacterCustomizationState_GetHeadAppearances(stateHandle.instance, "face", true, keys);
+        CharacterCustomizationState_GetHeadAppearances(stateHandle.instance, "hairs", true, keys);
+        if (IsBodyGenderMale(stateHandle.instance)) 
         {
-            stateHandle.instance->GetHeadCustomization("beards", true, keys);
+            CharacterCustomizationState_GetHeadAppearances(stateHandle.instance, "beards", true, keys);
         }
 
         // does all of them
-        // stateHandle.instance->GetHeadCustomization("character_customization", true, keys);
+        // CharacterCustomizationState_GetHeadAppearances(stateHandle.instance, "character_customization", true, keys);
 
-        stateHandle.instance->GetBodyCustomization("TPP_Body", true, keys);
+        CharacterCustomizationState_GetBodyAppearances(stateHandle.instance, "TPP_Body", true, keys);
         // make genitals appear as well
-        // stateHandle.instance->GetBodyCustomization("character_creation", true, keys);
+        // CharacterCustomizationState_GetBodyAppearances(stateHandle.instance, "character_creation", true, keys);
         // pops through clothes lol
-        // stateHandle.instance->GetBodyCustomization("genitals", true, keys);
-        stateHandle.instance->GetBodyCustomization("breast", true, keys);
-        stateHandle.instance->GetBodyCustomization("lifted_feet", true, keys);
-        stateHandle.instance->GetBodyCustomization("flat_feet", true, keys);
+        // CharacterCustomizationState_GetBodyAppearances(stateHandle.instance, "genitals", true, keys);
+        CharacterCustomizationState_GetBodyAppearances(stateHandle.instance, "breast", true, keys);
+        CharacterCustomizationState_GetBodyAppearances(stateHandle.instance, "lifted_feet", true, keys);
+        CharacterCustomizationState_GetBodyAppearances(stateHandle.instance, "flat_feet", true, keys);
 
-        // stateHandle.instance->GetArmsCustomization("character_customization", true, keys);
-        stateHandle.instance->GetArmsCustomization("holstered_default", true, keys);
-        stateHandle.instance->GetArmsCustomization("nails", true, keys);
+        // CharacterCustomizationState_GetArmsAppearances(stateHandle.instance, "character_customization", true, keys);
+        CharacterCustomizationState_GetArmsAppearances(stateHandle.instance, "holstered_default", true, keys);
+        CharacterCustomizationState_GetArmsAppearances(stateHandle.instance, "nails", true, keys);
 
         auto changer = Red::GetRuntimeSystem<Red::world::RuntimeSystemEntityAppearanceChanger>();
         Red::WeakHandle<Red::game::Object> weakHandle = object;
@@ -332,8 +333,8 @@ bool AppearanceSystem::ApplyAppearance(Red::Handle<Red::game::Object> object)
             .end = nullptr
         };
         Span<Red::world::EntityAppearanceChangeParameter::Key> new_keys = {
-            .start = keys.entries,
-            .end = &keys.entries[keys.size]
+            .start = keys.Data(),
+            .end = keys.Data() + keys.Size()
         };
         const std::function<void (void)> callback = [stateHandle = std::move(stateHandle), object = std::move(object)](void) 
         {

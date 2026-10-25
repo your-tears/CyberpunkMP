@@ -128,3 +128,39 @@ xmake собирает всё сразу: C++ клиент и сервер, C# S
   влить upstream/master в форк, а не переходить на чистый upstream.
   **Риск:** смещения полей из реверса форка (под 2.2) в 2.5 могли сдвинуться. Компилятор
   этого не увидит, проверять в рантайме.
+- RED4ext.SDK: локальная ветка `cyberpunkmp-2.5` (коммит 17387e0f, ещё не запушена) = форк +
+  wopss master@5246e659 (тот же коммит, против которого собран Codeware v1.21.0). Прошлые
+  слияния в форке молча откатывали куски upstream. Правило разрешения: ядро SDK и разметка
+  структур из upstream; файлы, где форк только удалял код upstream, тоже из upstream; чисто
+  добавочные файлы и поля форка сохранены; поля форка внутри структур, чья разметка в 2.5
+  поменялась, убраны. Нужен include `RED4ext.SDK/vendor/D3D12MemAlloc` (vendor/xmake.lua).
+- В 2.5 изменились размеры: game::Puppet 0x5F8→0x618, Item_Record 0x478→0x488,
+  CharacterCustomizationState 0xF0→0x110, ink::TextWidget (+0x30), vehicle::BaseObject
+  (сдвиги неравномерные: +0x8…+0x30), WheeledBaseObject 0xBE0→0xC10. move::Component не изменился (0x2C0).
+- `code/client/Red/` = RedLib. Было: копия из Codeware v1.6.1 + 4 правки. Заменено на RedLib из
+  Codeware v1.21.0, поверх три правки CyberpunkMP: `IsNone` в GetClass,
+  `remove_cvref_t` в Invocation, `RED4ext::SharedPtr` в Utils/Resources.hpp (в проекте есть
+  глобальный `SharedPtr` = std::shared_ptr). Адреса по хешу в новой RedLib уже есть.
+- Проверка всех файлов клиента разом (xmake останавливается на первой ошибке): скрипт
+  `checkall.ps1` в scratchpad. Он компилирует каждую команду из compile_commands.json отдельно.
+
+### Реестр полей, зависящих от разметки 2.5 (НЕ проверены)
+
+Решение пользователя: где можно, надёжная замена без офсетов, остальное временно отключить
+с `spdlog::warn("[2.5] ...")`. Все места помечены в коде комментарием `Patch 2.5:`.
+
+| Где в клиенте | Что | Статус |
+|---|---|---|
+| App/Extensions/inkTextInputWidget.cpp | TextInputWidget::caretPosition (2.2: 0x434) | ОТКЛЮЧЕНО (MoveCaret нигде не вызывается) |
+| App/World/NetworkWorldSystem.cpp | Puppet::moveComponent (2.2: 0x420) | ЗАМЕНЕНО: поиск move::Component в `components` |
+| Game/Animation/MultiMovementController.cpp | move::Component::representation (0x138) | ОТКЛЮЧЕНО (Reset() нигде не вызывается) |
+| App/World/NetworkWorldSystem.cpp | vehicle rigidBody->currentTransform | ЗАМЕНЕНО: transformComponent->worldTransform |
+| App/World/NetworkWorldSystem.cpp | vehicle rigidBody->velocity | ЗАМЕНЕНО: скорость по смещению позиции / dt |
+| App/World/VehicleSystem.cpp | vtable +0x328 («включить двигатель») и engineData->unk61 | ОТКЛЮЧЕНО, чужие машины без запуска двигателя |
+| App/World/NetworkWorldSystem.cpp, AppearanceSystem.cpp | isBodyGenderMale | ЗАМЕНЕНО: `IsBodyGenderMale()` через RTTI-вызов; если функции нет, warn и «мужское» |
+| App/World/AppearanceSystem.cpp | виртуальные Get{Head,Body,Arms}Customization (слоты vtable 2.2) | ЗАМЕНЕНО: RawFunc по хешам, как в ArchiveXL 1.28 (`..._Get*Appearances1`). Вариант 1/2 проверить в игре |
+| App/World/AppearanceSystem.cpp | Item_Record::appearanceName | ЗАМЕНЕНО: `TweakDB::GetValue<CName>(item + ".appearanceName")` |
+| vendor: inkWidget.hpp, vehicleBaseObject.hpp (вне конфликта), inkTextWidget.hpp, ICharacterCustomizationState.hpp (vtable) | поля и виртуалы форка с офсетами 2.2 | компилируются, клиентом сейчас не используются; не использовать без проверки |
+
+Подтверждение из ArchiveXL 1.28 (2.5): группы head/body/arms у CharacterCustomizationState
+по 0x70/0x80/0x90, как в реверсе форка, то есть начало структуры не сдвинулось.

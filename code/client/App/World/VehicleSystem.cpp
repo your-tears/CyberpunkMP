@@ -40,9 +40,9 @@ void VehicleSystem::OnInitialize(const RED4ext::JobHandle& aJob)
     pNetworkService->RegisterHandler<&VehicleSystem::HandleVehicleExitMessage>(this);
     pNetworkService->RegisterHandler<&VehicleSystem::HandleVehicleControlMessage>(this);
 
-    m_pSpawnVehicle = Red::Detail::GetFunction(GetType(), "SpawnVehicle");
-    m_pEnterVehicle = Red::Detail::GetFunction(GetType(), "EnterVehicle");
-    m_pExitVehicle = Red::Detail::GetFunction(GetType(), "ExitVehicle");
+    m_pSpawnVehicle = Red::GetMemberFunction(GetType(), "SpawnVehicle");
+    m_pEnterVehicle = Red::GetMemberFunction(GetType(), "EnterVehicle");
+    m_pExitVehicle = Red::GetMemberFunction(GetType(), "ExitVehicle");
 }
 
 std::optional<uint64_t> VehicleSystem::GetVehicleRemoteId() const
@@ -127,7 +127,7 @@ bool VehicleSystem::HandleVehicleLoadMessage(const PacketEvent<server::NotifyVeh
     const auto quat = glm::quat(eulerAngles);
     Red::Quaternion rotation = Game::ToRed(quat);
 
-    if (!Red::Detail::CallFunctionWithArgs(m_pSpawnVehicle, handle, id, aMessage.get_tweak_id(), position, rotation))
+    if (!Red::Detail::CallFunctionWithArgs(nullptr, m_pSpawnVehicle, handle, id, aMessage.get_tweak_id(), position, rotation))
         return false;
 
     if (!id.IsDynamic())
@@ -172,7 +172,7 @@ bool VehicleSystem::HandleVehicleEnterMessage(const PacketEvent<server::NotifyVe
     // 
     // const auto sit = Red::CName(aMessage.get_sit_id());
 
-    // if (!Red::Detail::CallFunctionWithArgs(m_pEnterVehicle, handle, res, character, vehicle, sit))
+    // if (!Red::Detail::CallFunctionWithArgs(nullptr, m_pEnterVehicle, handle, res, character, vehicle, sit))
     //     return false;
 
     return true;
@@ -216,7 +216,7 @@ bool VehicleSystem::HandleVehicleExitMessage(const PacketEvent<server::NotifyVeh
     const auto handle = Red::Handle(this);
     bool res;
     const auto character = worldSystem->GetEntityIdByServerId(aMessage.get_character_id());
-    Red::Detail::CallFunctionWithArgs(m_pExitVehicle, handle, res, character);
+    Red::Detail::CallFunctionWithArgs(nullptr, m_pExitVehicle, handle, res, character);
 
     auto characterEntity = worldSystem->GetEntityByServerId(aMessage.get_character_id());
 
@@ -239,7 +239,7 @@ void VehicleSystem::DoMount(flecs::entity aCharacter, Red::EntityID aVehicle, Re
     const auto handle = Red::Handle(this);
     bool res;
 
-    Red::Detail::CallFunctionWithArgs(m_pEnterVehicle, handle, res, character, vehicle->id, aSit);
+    Red::Detail::CallFunctionWithArgs(nullptr, m_pEnterVehicle, handle, res, character, vehicle->entityID, aSit);
 
     aCharacter.add<AttachedComponent>();
 
@@ -254,8 +254,10 @@ void VehicleSystem::DoMount(flecs::entity aCharacter, Red::EntityID aVehicle, Re
         // AttachLocomotionController(component, controller);
         SetIsPlayerControlled(vehicle, false);
         // turn on engine
-        reinterpret_cast<void (*)(Red::vehicle::WheeledBaseObject*, bool)>(*(uintptr_t*)(*(uintptr_t*)vehicle.instance + 0x328))(vehicle, true);
-        vehicle->engineData->unk61 = 0;
+        // Patch 2.5: disabled until verified, the vtable slot (0x328) and engineData->unk61 were reversed for 2.2
+        // reinterpret_cast<void (*)(Red::vehicle::WheeledBaseObject*, bool)>(*(uintptr_t*)(*(uintptr_t*)vehicle.instance + 0x328))(vehicle, true);
+        // vehicle->engineData->unk61 = 0;
+        spdlog::warn("[2.5] Remote vehicle engine start is disabled until its vtable slot is verified");
         SetFlags(vehicle, 0x10);
         SetFlags(vehicle, 0x80);
         SetKinematic(vehicle, true);

@@ -4,6 +4,7 @@
 #include "Game/Utils.h"
 
 #include <RED4ext/Scripting/Natives/moveComponent.hpp>
+#include <RED4ext/Scripting/Natives/entIPlacedComponent.hpp>
 #include <RED4ext/Scripting/Natives/Generated/anim/AnimFeature_NPCExploration.hpp>
 
 #include "States/Spawning.h"
@@ -35,8 +36,8 @@ void MultiMovementController::Tick(float delta)
 
 void MultiMovementController::GetDeltaTransform(Red::Vector4& positionDelta, Red::Quaternion& rotationDelta)
 {
-    const auto& rawPosition = m_pComponent->owner->placedComponent->localTransform.Position;
-    const auto& rawRotation = m_pComponent->owner->placedComponent->localTransform.Orientation;
+    const auto& rawPosition = m_pComponent->owner->transformComponent->localTransform.Position;
+    const auto& rawRotation = m_pComponent->owner->transformComponent->localTransform.Orientation;
     const glm::vec3 pos = Game::ToGlm(rawPosition);
     const auto rot = Game::ToGlm(rawRotation);
 
@@ -113,8 +114,8 @@ void MultiMovementController::Attach(Red::move::Component& movable)
 {
     m_pComponent = &movable;
 
-    const auto& pos = movable.owner->placedComponent->localTransform.Position;
-    const auto& rot = movable.owner->placedComponent->localTransform.Orientation;
+    const auto& pos = movable.owner->transformComponent->localTransform.Position;
+    const auto& rot = movable.owner->transformComponent->localTransform.Orientation;
 
     const auto quat = Game::ToGlm(rot);
     SetTransform(Red::Vector4{pos.x, pos.y, pos.z, 0.f}, eulerAngles(quat).z, 0.f);
@@ -153,8 +154,10 @@ float MultiMovementController::GetAnimLength(Red::CName aName) const
 
 void MultiMovementController::Reset()
 {
-    m_pComponent->representation.stack.Clear();
-    m_pComponent->representation.activeIndex = -1;
-    m_pComponent->representation.activeEntry = nullptr;
-    m_pComponent->representation.active = false;
+    // Patch 2.5: disabled until verified, move::Component::representation (0x138) was reversed for 2.2
+    // m_pComponent->representation.stack.Clear();
+    // m_pComponent->representation.activeIndex = -1;
+    // m_pComponent->representation.activeEntry = nullptr;
+    // m_pComponent->representation.active = false;
+    spdlog::warn("[2.5] MultiMovementController::Reset is disabled until move::Component layout is verified");
 }

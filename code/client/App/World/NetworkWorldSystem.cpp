@@ -5,6 +5,8 @@
 #include "App/Network/NetworkService.h"
 #include "RED4ext/Scripting/Natives/Generated/game/Puppet.hpp"
 #include "RED4ext/Scripting/Natives/Generated/vehicle/BaseObject.hpp"
+#include "RED4ext/Scripting/Natives/entIPlacedComponent.hpp"
+#include "RED4ext/Scripting/Natives/moveComponent.hpp"
 #include "RED4ext/Scripting/Natives/gameIEntityStubSystem.hpp"
 #include "RED4ext/Scripting/Natives/Generated/game/EntityStubComponentPS.hpp"
 #include <RED4ext/Scripting/Natives/Generated/game/mounting/MountingFacility.hpp>
@@ -46,7 +48,7 @@ bool NetworkWorldSystem::Spawn(uint64_t aServerId, const Red::Vector4& aPosition
     auto reader = CMPReader(aCcstate);
     CharacterCustomizationState_Serialize(stateHandle.instance, &reader);
 
-    if (!Red::Detail::CallFunctionWithArgs(m_pCreatePuppet, handle, id, aPosition, aRotation, stateHandle.instance->isBodyGenderMale))
+    if (!Red::Detail::CallFunctionWithArgs(nullptr, m_pCreatePuppet, handle, id, aPosition, aRotation, IsBodyGenderMale(stateHandle.instance)))
         return false;
 
     auto apprSystem = Red::GetGameSystem<NetworkWorldSystem>()->GetAppearanceSystem();
@@ -70,12 +72,12 @@ void NetworkWorldSystem::DeSpawn(uint64_t aServerId) const
     if (auto* pEntity = entity.get<EntityComponent>())
     {
         const auto handle = Red::GetGameSystem<NetworkWorldSystem>();
-        Red::Detail::CallFunctionWithArgs(m_pDeletePuppet, handle, pEntity->Id);
+        Red::Detail::CallFunctionWithArgs(nullptr, m_pDeletePuppet, handle, pEntity->Id);
     }
     else if (auto* pEntity = entity.get<SpawningComponent>())
     {
         const auto handle = Red::GetGameSystem<NetworkWorldSystem>();
-        Red::Detail::CallFunctionWithArgs(m_pDeletePuppet, handle, pEntity->Id);
+        Red::Detail::CallFunctionWithArgs(nullptr, m_pDeletePuppet, handle, pEntity->Id);
     }
 
     entity.destruct();
@@ -266,9 +268,10 @@ void NetworkWorldSystem::UpdatePlayerLocation() const
         {
             auto transform = Red::WorldTransform();
 
-            transform = vehicle->rigidBody->currentTransform;
+            // Patch 2.5: rigidBody offsets were reversed for 2.2, use the placed component instead
+            transform = vehicle->transformComponent->worldTransform;
 
-            // const auto cEntityRotation = eulerAngles(Game::ToGlm(vehicle->placedComponent->worldTransform.Orientation));
+            // const auto cEntityRotation = eulerAngles(Game::ToGlm(vehicle->transformComponent->worldTransform.Orientation));
 
             // about the same
             // transform = vehicle->worldTransform;
@@ -285,7 +288,24 @@ void NetworkWorldSystem::UpdatePlayerLocation() const
 
             const auto cEntityPosition = transform.Position;
             const auto cEntityRotation = eulerAngles(Game::ToGlm(transform.Orientation));
-            float speed = vehicle->rigidBody->velocity.Magnitude();
+            // Patch 2.5: rigidBody->velocity is not verified, derive the speed from the motion
+            float speed = 0.f;
+            {
+                static float s_lastX = 0.f, s_lastY = 0.f, s_lastZ = 0.f;
+                static auto s_lastTime = std::chrono::steady_clock::now();
+
+                const auto now = std::chrono::steady_clock::now();
+                const float dt = std::chrono::duration<float>(now - s_lastTime).count();
+                const float x = cEntityPosition.x, y = cEntityPosition.y, z = cEntityPosition.z;
+
+                if (dt > 0.f && dt < 1.f)
+                    speed = std::sqrt((x - s_lastX) * (x - s_lastX) + (y - s_lastY) * (y - s_lastY) + (z - s_lastZ) * (z - s_lastZ)) / dt;
+
+                s_lastX = x;
+                s_lastY = y;
+                s_lastZ = z;
+                s_lastTime = now;
+            }
 
             common::Vector3 pos;
             pos.set_x(cEntityPosition.x);
@@ -319,9 +339,18 @@ void NetworkWorldSystem::UpdatePlayerLocation() const
     }
     else
     {
-        const auto cEntityPosition = puppet->placedComponent->localTransform.Position;
-        const auto cEntityRotation = eulerAngles(Game::ToGlm(puppet->placedComponent->worldTransform.Orientation));
-        float speed = puppet->moveComponent->speed.Magnitude();
+        const auto cEntityPosition = puppet->transformComponent->localTransform.Position;
+        const auto cEntityRotation = eulerAngles(Game::ToGlm(puppet->transformComponent->worldTransform.Orientation));
+        // Patch 2.5: Puppet::moveComponent offset was reversed for 2.2, look the component up by type
+        float speed = 0.f;
+        for (const auto& component : puppet->components)
+        {
+            if (const auto moveComponent = Red::Cast<Red::move::Component>(component))
+            {
+                speed = moveComponent->speed.Magnitude();
+                break;
+            }
+        }
 
         common::Vector3 pos;
         pos.set_x(cEntityPosition.x);
@@ -362,7 +391,7 @@ void NetworkWorldSystem::UpdatePlayerLocation() const
     //     else
     //     {
     //         // if (vehicle->placedComponent) {
-    //             // entityPosition = vehicle->placedComponent->localTransform.Position;
+    //             // entityPosition = vehicle->transformComponent->localTransform.Position;
     //         // } else {
     //             // entityPosition = vehicle->worldTransform.Position;
     //             entityPosition = vehicle->rigidBody->worldPosition;
@@ -387,8 +416,8 @@ void NetworkWorldSystem::OnInitialize(const RED4ext::JobHandle& aJob)
 
     m_remotePlayerId = std::nullopt;
 
-    m_pCreatePuppet = Red::Detail::GetFunction(GetType(), "CreatePuppet");
-    m_pDeletePuppet = Red::Detail::GetFunction(GetType(), "DeletePuppet");
+    m_pCreatePuppet = Red::GetMemberFunction(GetType(), "CreatePuppet");
+    m_pDeletePuppet = Red::GetMemberFunction(GetType(), "DeletePuppet");
 
     m_interpolationSystem = RED4ext::MakeHandle<InterpolationSystem>();
     m_interpolationSystem->OnInitialize(aJob);
@@ -438,12 +467,12 @@ void NetworkWorldSystem::OnConnected()
             const auto pEntity = GetEntity(aSpawning.Id);
             if (const auto pOwner = Red::Cast<Red::GameObject>(pEntity))
             {
-                if (pOwner->tags.Contains("CyberpunkMP.Vehicle"))
+                if (pOwner->tags.Contains(Red::CName("CyberpunkMP.Vehicle")))
                     return;
 
                  aEntity.emplace<EntityComponent>(aSpawning.Id, false, aSpawning.Controller);
                  aEntity.remove<SpawningComponent>();
-                 pOwner->tags.Add("CyberpunkMP.Puppet");
+                 pOwner->tags.Add(Red::CName("CyberpunkMP.Puppet"));
             }
         });
 
