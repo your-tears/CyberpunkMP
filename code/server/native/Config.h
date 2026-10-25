@@ -15,6 +15,16 @@ struct FlecsConfig
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(FlecsConfig, Enabled, Port, IpAddress)
 };
 
+struct SpawnPointConfig
+{
+    float X{};
+    float Y{};
+    float Z{};
+    float Yaw{}; // degrees
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(SpawnPointConfig, X, Y, Z, Yaw)
+};
+
 struct Config : IConfig
 {
     std::string Name{"Default"};
@@ -30,6 +40,9 @@ struct Config : IConfig
     uint16_t UpdateRate{10};
     std::string Password{};
     FlecsConfig Flecs{};
+    // Where players appear on connect. Default: street in Heywood next to the Street Kid start,
+    // captured in game on patch 2.5 (yaw from the quaternion z = -0.998 the client reported).
+    std::vector<SpawnPointConfig> SpawnPoints{{-1234.5017f, -1005.55835f, 12.366562f, -172.0f}};
 
     const char* GetName() const override { return Name.c_str(); }
     const char* GetDescription() const override { return Description.c_str(); }
@@ -45,5 +58,6 @@ struct Config : IConfig
     const char* GetPassword() const { return Password.c_str(); }
     const FlecsConfig& GetFlecsConfig() const { return Flecs; }
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Config, Name, Description, IconUrl, MaxPlayer, Tags, TickRate, UpdateRate, Public, Port, Password, ApiKey, Flecs)
+    // WITH_DEFAULT: keys missing from an existing server.json (e.g. SpawnPoints) keep their defaults
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Config, Name, Description, IconUrl, MaxPlayer, Tags, TickRate, UpdateRate, Public, Port, Password, ApiKey, Flecs, SpawnPoints)
 };

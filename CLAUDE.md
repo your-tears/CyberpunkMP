@@ -113,6 +113,18 @@ xmake собирает всё сразу: C++ клиент и сервер, C# S
 `code/assets/Inputs/CyberpunkMP.xml`: чат `;`, эмоции `.`, работы `,`, прокрутка чата PageUp/PageDown.
 25.10.2026: игра с модом впервые дошла до главного меню на 2.5.
 
+**Старт без сохранения (вариант 2, «как FiveM»).** Пункт главного меню «МУЛЬТИПЛЕЕР»
+(`code/assets/redscript/Ink/MainMenuMultiplayer.reds`) вызывает отладочный
+`inkISystemRequestsHandler.StartWorld(0 = 03_night_city, 2 = Male)`: Найт-Сити без сейва, пролога
+и редактора, но игрок появляется в (0,0,0) под картой. Затем HUD мода автоподключается (флаг
+`CyberpunkMPRequestAutoConnect/ConsumeAutoConnect`, App/Extensions/SessionStart.cpp), сервер
+кладёт точку в `AuthenticationResponse.spawn` (`SpawnPoints` в server.json; конфиг теперь читается
+WITH_DEFAULT и переписывается с новыми полями), клиент делает `TeleportationFacility.Teleport`
+(NetworkService::HandleAuthentication). Первая точка снята в игре: Хейвуд у старта «Дитя улиц»
+(-1234.50, -1005.56, 12.37). Описания gamedef в релизе есть (13 категорий), но без имён.
+Декомпиляция ванильных скриптов: `redscript-cli decompile -i r6/cache/final.redscripts -o out.reds`.
+Нативный лог для скриптов: `CyberpunkMPLog(text)` → CyberpunkMP.log (ванильные FTLog/LogChannel в релизе молчат).
+
 Логи для отладки: `red4ext/logs/`, `red4ext/plugins/zzzCyberpunkMP/CyberpunkMP.log`,
 `r6/logs/redscript_rCURRENT.log`, `red4ext/plugins/{ArchiveXL,TweakXL,Codeware}/*.log`,
 `bin/x64/plugins/cyber_engine_tweaks/cyber_engine_tweaks.log`, краши: `%LOCALAPPDATA%\REDEngine\ReportQueue\`.

@@ -40,6 +40,11 @@ GameServer::GameServer()
         {
             json data = json::parse(config);
             m_config = data.get<Config>();
+            config.close();
+
+            // Write back so that settings added in newer versions (e.g. SpawnPoints) show up in the file
+            std::ofstream of(serverPath / "config" / "server.json");
+            of << std::setw(4) << json(m_config);
         }
     }
     catch (std::exception& e)
@@ -163,6 +168,22 @@ void GameServer::HandleAuthentication(const PacketEvent<client::AuthenticationRe
     server::Settings settings;
     settings.set_update_rate(m_config.UpdateRate);
     response.set_settings(settings);
+
+    if (!m_config.SpawnPoints.empty())
+    {
+        const auto& point = m_config.SpawnPoints[std::rand() % m_config.SpawnPoints.size()];
+
+        common::Vector3 position;
+        position.set_x(point.X);
+        position.set_y(point.Y);
+        position.set_z(point.Z);
+
+        server::SpawnPoint spawn;
+        spawn.set_position(position);
+        spawn.set_yaw(point.Yaw);
+
+        response.set_spawn(spawn);
+    }
 
     server::RpcDefinitions definitions;
 

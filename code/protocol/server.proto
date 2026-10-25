@@ -8,10 +8,16 @@ message Settings {
     uint32 update_rate = 1;
 }
 
+message SpawnPoint {
+    common.Vector3 position = 1;
+    float yaw = 2; // degrees
+}
+
 message AuthenticationResponse {
     bool success = 1;
     string error = 2;
     Settings settings = 3;
+    SpawnPoint spawn = 4; // the server decides where the player appears; netpack generates has_spawn()
 }
 
 message SpawnCharacterResponse{

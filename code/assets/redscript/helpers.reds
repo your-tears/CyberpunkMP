@@ -16,3 +16,5 @@ native func TraceToString() -> String
 
 // CyberpunkMP native, writes to CyberpunkMP.log (vanilla log functions are no-ops in retail)
 native func CyberpunkMPLog(text: String) -> Void
+native func CyberpunkMPRequestAutoConnect() -> Void
+native func CyberpunkMPConsumeAutoConnect() -> Bool

@@ -79,6 +79,12 @@ public class MultiplayerGameController extends inkGameController {
         // this.m_player.RegisterInputListener(this, n"UIDisconnectFromServer");
         this.UpdateInputHints();
 
+        // The main menu "multiplayer" entry starts the world without a save and asks to connect right away
+        if CyberpunkMPConsumeAutoConnect() {
+            CyberpunkMPLog("[MultiplayerGameController] auto-connecting after save-less world start");
+            GameInstance.GetNetworkWorldSystem().Connect();
+        }
+
         this.m_username = "jackhumbert";
         // this.SpawnFromExternal(this.GetWidget(n"hud/wrapper"), r"mods\\cyberpunkmp\\multiplayer_ui.inkwidget", n"phone_device");
         this.AsyncSpawnFromLocal(this.GetWidget(n"hud"), n"phone_device", this, n"OnHotKeySpawn");

@@ -5,6 +5,8 @@
 #include "RED4ext/Scripting/Natives/Generated/Vector4.hpp"
 #include "RED4ext/Scripting/Natives/Generated/game/Object.hpp"
 #include "RED4ext/Scripting/Natives/entIPlacedComponent.hpp"
+#include "RED4ext/Scripting/Natives/Generated/game/TeleportationFacility.hpp"
+#include "RED4ext/Scripting/Natives/Generated/EulerAngles.hpp"
 #include "App/World/AppearanceSystem.h"
 #include "Game/CharacterCustomizationSystem.h"
 
@@ -96,9 +98,30 @@ void NetworkService::HandleAuthentication(const PacketEvent<server::Authenticati
     pos.set_x(cEntityPosition.x);
     pos.set_y(cEntityPosition.y);
     pos.set_z(cEntityPosition.z);
+    float rotation = cEntityRotation.z;
+
+    // The server decides where the player appears (needed for the save-less world start,
+    // which puts the player at the world origin under the map)
+    if (aResponse.has_spawn())
+    {
+        const auto& spawn = aResponse.get_spawn();
+        pos = spawn.get_position();
+
+        Red::Vector4 position{pos.get_x(), pos.get_y(), pos.get_z(), 1.f};
+        Red::EulerAngles angles{0.f, 0.f, spawn.get_yaw()};
+
+        const auto teleportation = Red::GetGameSystem<Red::game::TeleportationFacility>();
+        if (Red::CallVirtual(teleportation, "Teleport", player, position, angles))
+            spdlog::info("Teleported to spawn ({}, {}, {}), yaw {}", pos.get_x(), pos.get_y(), pos.get_z(), spawn.get_yaw());
+        else
+            spdlog::error("Failed to call TeleportationFacility::Teleport");
+
+        // Keep the reported rotation in the same form as above, a pure yaw quaternion's z
+        rotation = std::sin(glm::radians(spawn.get_yaw()) * 0.5f);
+    }
 
     request.set_position(pos);
-    request.set_rotation(cEntityRotation.z);
+    request.set_rotation(rotation);
     request.set_cookie(0);
 
     auto appSystem = Red::GetGameSystem<NetworkWorldSystem>()->GetAppearanceSystem();
