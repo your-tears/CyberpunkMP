@@ -151,17 +151,15 @@ struct ScriptFunction : ScriptDefinition
     Red::DynArray<ScriptParameter*> params;            // 58
     Red::DynArray<ScriptLocalVar*> localVars;          // 68
     Red::HashMap<Red::CName, Red::CString> attributes; // 78
-    ScriptType* returnType;                            // A8
-    uint16_t unkB0;                                    // B0
-    ScriptFunction* overridden;                        // B8
-    Flags flags;                                       // C0
-    Red::CName operatorName;                           // C8
-    uint8_t castValue;                                 // D0
-    EScriptVisibility visibility;                      // D1
-    Red::DynArray<uint8_t> code;                       // D8
-    ScriptFileInfo* sourceFile;                        // E8
-    uint32_t sourceLine;                               // F0
+    ScriptType* returnType;                            // A8 - not verified for 2.5
+    uint8_t unkB0[0xF8 - 0xB0];                        // B0 - 2.5 inserted another hash map at B8
+    // Patch 2.5: verified in game, all "static native" functions have 0x04000011 here.
+    // Codeware v1.21.0 keeps the 2.2 tail (flags at C0), which is wrong for 2.5.
+    Flags flags;                                       // F8
+    // operatorName, visibility, code, sourceFile... are not verified for 2.5 and unused
 };
+RED4EXT_ASSERT_OFFSET(ScriptFunction, params, 0x58);
+RED4EXT_ASSERT_OFFSET(ScriptFunction, flags, 0xF8);
 
 struct ScriptClass : ScriptDefinition
 {

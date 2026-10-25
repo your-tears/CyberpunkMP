@@ -191,6 +191,8 @@ xmake собирает всё сразу: C++ клиент и сервер, C# S
 | vendor: inkWidget.hpp, vehicleBaseObject.hpp (вне конфликта), inkTextWidget.hpp, ICharacterCustomizationState.hpp (vtable) | поля и виртуалы форка с офсетами 2.2 | компилируются, клиентом сейчас не используются; не использовать без проверки |
 
 | Game/ScriptValidation.h (ScriptBundle, ScriptClass, ScriptFunction и т.д.) | скриптовые структуры движка | ЗАМЕНЕНО на разметку Codeware 1.21.0 (коммит b054150f «Support patch 2.5»): база +0x28, ScriptClass +0x20, ScriptBundle +8. Первый краш в игре был здесь |
+| Game/ScriptValidation.h | ScriptFunction::flags | ПРОВЕРЕНО В ИГРЕ: 0xF8 (у Codeware 1.21.0 устаревшее 0xC0; в 2.5 после attributes добавлена ещё одна HashMap на 0xB8). Найдено hex-дампом: у всех `static native` функций там 0x04000011 |
+| App/World/VehicleSystem.h | нативное имя RTTI-класса | ИСПРАВЛЕНО: `CyberpunkMPVehicleSystem` (в 2.5 у игры свой нативный VehicleSystem) |
 | App/Network/Rpc/RpcValidator.cpp | ScriptReport::fillErrors и AddValidationError | ОТКЛЮЧЕНО, ошибки RPC-валидации пишутся в лог мода |
 
 Отладка крашей: `cdbX64 -z <dmp> -y D:\dev\cyber\build\windows\x64\release -c ".ecxr; kn 30; q"`

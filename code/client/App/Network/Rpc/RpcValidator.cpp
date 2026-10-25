@@ -150,6 +150,9 @@ bool HookScriptValidator_Validate(void* apThis, Game::ScriptBundle* apBundler, G
         if (klass->parent && klass->parent->name == parentName)
         {
             const auto pClass = Red::GetClass(klass->name);
+            // Patch 2.5: temporary diagnostics while porting
+            spdlog::info("[RpcValidator] server RPC class {}: {} script functions, already in RTTI: {}", name, klass->functions.Size(),
+                         pClass != nullptr);
             if (!pClass)
             {
                 using Descriptor = Red::ClassDescriptorDefaultImpl<RpcMock>;
@@ -161,7 +164,10 @@ bool HookScriptValidator_Validate(void* apThis, Game::ScriptBundle* apBundler, G
 
                 for (const auto func : klass->functions)
                 {
-                    if (!ValidateFunction(klass, func, apReporter))
+                    const bool valid = ValidateFunction(klass, func, apReporter);
+                    spdlog::info("[RpcValidator]   {}: native {}, static {}, params {}, valid {}", func->name.ToString(),
+                                 static_cast<bool>(func->flags.isNative), static_cast<bool>(func->flags.isStatic), func->params.Size(), valid);
+                    if (!valid)
                         continue;
 
                     RpcGenerator::CreateFunction(pDesc, klass, func);
@@ -169,6 +175,7 @@ bool HookScriptValidator_Validate(void* apThis, Game::ScriptBundle* apBundler, G
 
                 auto* rtti = Red::CRTTISystem::Get();
                 rtti->RegisterType(pDesc);
+                spdlog::info("[RpcValidator]   registered with {} static functions", pDesc->staticFuncs.Size());
             }
         }
     }
