@@ -33,3 +33,22 @@ protected cb func OnInitialize() -> Bool {
 
     return result;
 }
+
+// Temporary experiment: start Night City directly through the developer world start,
+// without a save, prologue or character creation.
+@wrapMethod(SingleplayerMenuGameController)
+private func PopulateMenuItemList() -> Void {
+    wrappedMethod();
+    this.AddMenuItem("МУЛЬТИПЛЕЕР (ТЕСТ)", n"CyberpunkMPStartWorld");
+}
+
+@wrapMethod(SingleplayerMenuGameController)
+protected func HandleMenuItemActivate(data: ref<PauseMenuListItemData>) -> Bool {
+    if Equals(data.eventName, n"CyberpunkMPStartWorld") {
+        // indices from the probe log: worlds[0] = 03_night_city, genders[2] = Male
+        CyberpunkMPLog("[SessionProbe] StartWorld(0 = 03_night_city, 2 = Male)");
+        this.GetSystemRequestsHandler().StartWorld(0, 2);
+        return true;
+    }
+    return wrappedMethod(data);
+}
