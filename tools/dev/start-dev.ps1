@@ -177,6 +177,25 @@ if (-not $NoGame) {
     if (-not (Get-Process -Name 'steam' -ErrorAction SilentlyContinue)) {
         Warn 'Steam не запущен. Если игра перезапустится через Steam, аргументы --online/--ip потеряются.'
     }
+    # Steam passes the AppID to games it launches itself. Without it the Steam API in the game
+    # cannot tell which app is running, so Steam does not show "playing". Read it from the manifest.
+    $steamApps = Split-Path (Split-Path $gameRoot)
+    $installDir = Split-Path $gameRoot -Leaf
+    $appId = $null
+    foreach ($manifest in Get-ChildItem $steamApps -Filter 'appmanifest_*.acf' -ErrorAction SilentlyContinue) {
+        $text = Get-Content $manifest.FullName -Raw
+        if ($text -match '"installdir"\s+"([^"]+)"' -and $Matches[1] -eq $installDir -and $text -match '"appid"\s+"(\d+)"') {
+            $appId = $Matches[1]
+            break
+        }
+    }
+    if ($appId) {
+        $env:SteamAppId = $appId
+        $env:SteamGameId = $appId
+    } else {
+        Warn 'Не нашёл манифест Steam для игры, Steam может не показать статус «в игре».'
+    }
+
     $gameArgs = @('--online', "--ip=$Ip", "--port=$Port")
     Start-Process -FilePath $GamePath -ArgumentList $gameArgs -WorkingDirectory (Split-Path $GamePath)
     Ok "Игра запущена: $($gameArgs -join ' ')"
