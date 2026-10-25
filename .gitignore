@@ -26,4 +26,4 @@ distrib/*
 # Miscellaneous
 code/client/Archives/CyberpunkMP.zip
 Cyberpunk2077.exe*
-imgui.ini
+imgui.ini/dist
