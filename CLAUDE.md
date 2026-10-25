@@ -108,6 +108,11 @@ xmake собирает всё сразу: C++ клиент и сервер, C# S
   (создаётся при первом запуске), логи `logs/`. Порты: игра UDP 11778, веб 11779, Flecs REST 27750.
   «Server could not reach the server list» безвредно (мастер-сервер Tilted Phoques мёртв).
 
+Подключение к серверу делается в мире, а не в меню: загрузить сейв или начать игру, затем
+удерживать `/` (UIConnectToServer, Connect() идёт на `--ip`/`--port`). Остальные клавиши из
+`code/assets/Inputs/CyberpunkMP.xml`: чат `;`, эмоции `.`, работы `,`, прокрутка чата PageUp/PageDown.
+25.10.2026: игра с модом впервые дошла до главного меню на 2.5.
+
 Логи для отладки: `red4ext/logs/`, `red4ext/plugins/zzzCyberpunkMP/CyberpunkMP.log`,
 `r6/logs/redscript_rCURRENT.log`, `red4ext/plugins/{ArchiveXL,TweakXL,Codeware}/*.log`,
 `bin/x64/plugins/cyber_engine_tweaks/cyber_engine_tweaks.log`, краши: `%LOCALAPPDATA%\REDEngine\ReportQueue\`.
